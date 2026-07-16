@@ -18,6 +18,9 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 20;
+const rateLimit = new Map<string, { count: number; resetAt: number }>();
 
 /* Adhi's real, honest facts — Sofia must stay inside these.
    Mirrors the site + chatbot knowledge base. Edit here to update. */
@@ -120,21 +123,84 @@ function buildContents(history: Turn[], message: string) {
   return contents;
 }
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+function allowedOrigin(req: Request) {
+  const origin = req.headers.get('origin');
+  if (!origin) return '';
+
+  const allowed = [
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '',
+  ].filter((url): url is string => Boolean(url));
+
+  try {
+    const host = new URL(origin).hostname;
+    if (
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === 'ceylonadhitours.com' ||
+      host === 'www.ceylonadhitours.com' ||
+      allowed.some((url) => new URL(url).origin === origin)
+    ) {
+      return origin;
+    }
+  } catch {
+    return '';
+  }
+
+  return '';
+}
+
+function corsHeaders(req: Request) {
+  const origin = allowedOrigin(req);
+  return {
+    ...(origin ? { 'Access-Control-Allow-Origin': origin } : {}),
+    Vary: 'Origin',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+}
+
+function rateLimitKey(req: Request) {
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    'anonymous'
+  );
+}
+
+function isRateLimited(req: Request) {
+  const now = Date.now();
+  const key = rateLimitKey(req);
+  const current = rateLimit.get(key);
+  if (!current || current.resetAt <= now) {
+    rateLimit.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+  current.count += 1;
+  return current.count > RATE_LIMIT_MAX;
+}
+
+const JSON_HEADERS = {
+  'Content-Type': 'application/json',
 };
 
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: CORS });
+export async function OPTIONS(req: Request) {
+  return new Response(null, { status: 204, headers: corsHeaders(req) });
 }
 
 export async function POST(req: Request) {
+  const headers = { ...JSON_HEADERS, ...corsHeaders(req) };
+  if (req.headers.get('origin') && !allowedOrigin(req)) {
+    return Response.json({ error: 'Origin not allowed' }, { status: 403, headers });
+  }
+  if (isRateLimited(req)) {
+    return Response.json({ error: 'Too many requests' }, { status: 429, headers });
+  }
+
   const KEY = process.env.GEMINI_API_KEY;
   // Not configured yet → tell the frontend to use its guided fallback.
   if (!KEY) {
-    return Response.json({ configured: false }, { headers: CORS });
+    return Response.json({ configured: false }, { headers });
   }
 
   let body: { message?: string; history?: Turn[] } = {};
@@ -147,7 +213,7 @@ export async function POST(req: Request) {
   const message = (body && body.message ? String(body.message) : '').trim();
   const history = body && Array.isArray(body.history) ? body.history : [];
   if (!message) {
-    return Response.json({ error: 'Empty message' }, { status: 400, headers: CORS });
+    return Response.json({ error: 'Empty message' }, { status: 400, headers });
   }
 
   const url =
@@ -186,7 +252,7 @@ export async function POST(req: Request) {
       const detail = await r.text().catch(() => '');
       console.error('Gemini error', r.status, detail.slice(0, 300));
       // Soft-fail → frontend falls back gracefully.
-      return Response.json({ configured: true, ok: false }, { headers: CORS });
+      return Response.json({ configured: true, ok: false }, { headers });
     }
 
     const data = await r.json();
@@ -196,10 +262,10 @@ export async function POST(req: Request) {
         .join('')
         .trim() || '';
 
-    if (!reply) return Response.json({ configured: true, ok: false }, { headers: CORS });
-    return Response.json({ configured: true, ok: true, reply }, { headers: CORS });
+    if (!reply) return Response.json({ configured: true, ok: false }, { headers });
+    return Response.json({ configured: true, ok: true, reply }, { headers });
   } catch (e) {
     console.error('Sofia handler exception', e instanceof Error ? e.message : e);
-    return Response.json({ configured: true, ok: false }, { headers: CORS });
+    return Response.json({ configured: true, ok: false }, { headers });
   }
 }

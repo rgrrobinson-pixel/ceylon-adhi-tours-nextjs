@@ -17,20 +17,82 @@
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 12;
+const rateLimit = new Map<string, { count: number; resetAt: number }>();
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
+function allowedOrigin(req: Request) {
+  const origin = req.headers.get('origin');
+  if (!origin) return '';
 
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: CORS });
+  const allowed = [
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '',
+  ].filter((url): url is string => Boolean(url));
+
+  try {
+    const host = new URL(origin).hostname;
+    if (
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === 'ceylonadhitours.com' ||
+      host === 'www.ceylonadhitours.com' ||
+      allowed.some((url) => new URL(url).origin === origin)
+    ) {
+      return origin;
+    }
+  } catch {
+    return '';
+  }
+
+  return '';
+}
+
+function corsHeaders(req: Request) {
+  const origin = allowedOrigin(req);
+  return {
+    ...(origin ? { 'Access-Control-Allow-Origin': origin } : {}),
+    Vary: 'Origin',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+}
+
+function rateLimitKey(req: Request) {
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    'anonymous'
+  );
+}
+
+function isRateLimited(req: Request) {
+  const now = Date.now();
+  const key = rateLimitKey(req);
+  const current = rateLimit.get(key);
+  if (!current || current.resetAt <= now) {
+    rateLimit.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+  current.count += 1;
+  return current.count > RATE_LIMIT_MAX;
+}
+
+export async function OPTIONS(req: Request) {
+  return new Response(null, { status: 204, headers: corsHeaders(req) });
 }
 
 type TranscriptTurn = { role?: string; text?: string };
 
 export async function POST(req: Request) {
+  const headers = corsHeaders(req);
+  if (req.headers.get('origin') && !allowedOrigin(req)) {
+    return Response.json({ error: 'Origin not allowed' }, { status: 403, headers });
+  }
+  if (isRateLimited(req)) {
+    return Response.json({ error: 'Too many requests' }, { status: 429, headers });
+  }
+
   let body: Record<string, unknown> = {};
   try {
     body = await req.json();
@@ -66,7 +128,7 @@ export async function POST(req: Request) {
   if (!WEBHOOK) {
     // Not wired yet — accept gracefully so the UI keeps flowing.
     console.log('Lead captured (no n8n webhook configured):', JSON.stringify(lead));
-    return Response.json({ ok: true, forwarded: false }, { headers: CORS });
+    return Response.json({ ok: true, forwarded: false }, { headers });
   }
 
   try {
@@ -87,11 +149,11 @@ export async function POST(req: Request) {
     if (!r.ok) {
       const detail = await r.text().catch(() => '');
       console.error('n8n webhook error', r.status, detail.slice(0, 300));
-      return Response.json({ ok: true, forwarded: false }, { headers: CORS });
+      return Response.json({ ok: true, forwarded: false }, { headers });
     }
-    return Response.json({ ok: true, forwarded: true }, { headers: CORS });
+    return Response.json({ ok: true, forwarded: true }, { headers });
   } catch (e) {
     console.error('Lead handoff exception', e instanceof Error ? e.message : e);
-    return Response.json({ ok: true, forwarded: false }, { headers: CORS });
+    return Response.json({ ok: true, forwarded: false }, { headers });
   }
 }
