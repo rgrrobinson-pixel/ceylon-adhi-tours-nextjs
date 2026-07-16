@@ -101,5 +101,40 @@ export const tourPackagesSection = defineType({
         },
       ],
     }),
+    defineField({
+      name: 'showVehicleSection',
+      title: 'Show larger group / van section',
+      type: 'boolean',
+      description: 'Turn the vehicle/van section below the packages on or off.',
+      initialValue: true,
+    }),
+    defineField({
+      name: 'vehicleHeading',
+      title: 'Vehicle section heading',
+      type: 'string',
+      initialValue: 'Travelling as a larger group or family?',
+    }),
+    defineField({
+      name: 'vehicleText',
+      title: 'Vehicle section text',
+      type: 'text',
+      rows: 4,
+      initialValue:
+        "For couples and small groups of up to about 3 people, Adhi's comfortable air-conditioned car is ideal. For bigger groups and families, his air-conditioned Toyota van has plenty of room, plus luggage, so everyone travels together — indicative van rate from around US$90 per day. Just tell him your group size and he'll arrange the right vehicle.",
+    }),
+    defineField({
+      name: 'vehicleImage',
+      title: 'Vehicle / van image',
+      type: 'image',
+      options: { hotspot: true },
+      description: 'Photo shown with the larger group / van section.',
+    }),
+    defineField({
+      name: 'vehicleImageAlt',
+      title: 'Vehicle image description',
+      type: 'string',
+      description:
+        'Describe the image for accessibility and Google, e.g. "Inside Adhi’s air-conditioned Toyota van".',
+    }),
   ],
 });

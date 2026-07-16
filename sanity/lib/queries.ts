@@ -38,7 +38,8 @@ export const destinationsGalleryQuery = groq`*[_type == "destinationsGallery"][0
 export const tourPackagesQuery = groq`*[_type == "tourPackagesSection"][0]{
   enabled, eyebrow, heading, subheading,
   packages[]{ _key, title, forPeople, originalPrice, offerPrice, perDayNote, highlight },
-  inclusions, exclusions, footnote, ctaLabel
+  inclusions, exclusions, footnote, ctaLabel,
+  showVehicleSection, vehicleHeading, vehicleText, vehicleImage, vehicleImageAlt
 }`;
 
 export const videoSectionQuery = groq`*[_type == "videoSection"][0]{

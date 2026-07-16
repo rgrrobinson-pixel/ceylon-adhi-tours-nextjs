@@ -125,6 +125,11 @@ export interface TourPackagesSection {
   exclusions?: string[];
   footnote?: string;
   ctaLabel?: string;
+  showVehicleSection?: boolean;
+  vehicleHeading?: string;
+  vehicleText?: string;
+  vehicleImage?: ImageSource;
+  vehicleImageAlt?: string;
 }
 
 // ---- Page-level FAQ (destination & itinerary pages) ----

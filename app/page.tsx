@@ -90,6 +90,15 @@ export default async function HomePage() {
   const logoUrl = settings.logo ? resolveImageUrl(settings.logo, 480) : null;
   const currency = settings.currency || 'USD';
   const currencySymbol = currency === 'USD' ? 'US$' : `${currency} `;
+  const vehicleImage =
+    (tourPackages?.vehicleImage
+      ? resolveImageUrl(tourPackages.vehicleImage, 1200)
+      : '') || '/adhi-van-interior.jpg';
+  const vehicleHeading =
+    tourPackages?.vehicleHeading || 'Travelling as a larger group or family?';
+  const vehicleText =
+    tourPackages?.vehicleText ||
+    "For couples and small groups of up to about 3 people, Adhi's comfortable air-conditioned car is ideal. For bigger groups and families, his air-conditioned Toyota van has plenty of room, plus luggage, so everyone travels together — indicative van rate from around US$90 per day. Just tell him your group size and he'll arrange the right vehicle.";
 
   const waHref = whatsappHref(settings.whatsappNumber);
   const bookHref = settings.bookingUrl || waHref || '#contact';
@@ -403,37 +412,36 @@ export default async function HomePage() {
                 <p className="pkg-footnote">{tourPackages.footnote}</p>
               )}
 
-              {/* Larger groups / families van — sits under the package cards */}
-              <div
-                style={{
-                  marginTop: 32,
-                  display: 'grid',
-                  gridTemplateColumns: 'minmax(0, 1fr)',
-                  gap: 20,
-                  alignItems: 'center',
-                }}
-                className="van-feature"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/adhi-van-interior.jpg"
-                  alt="Inside Adhi's comfortable air-conditioned Toyota van, with cushioned seating and plenty of room for larger groups and families"
-                  loading="lazy"
+              {tourPackages?.showVehicleSection !== false && (
+                <div
                   style={{
-                    width: '100%',
-                    borderRadius: 12,
-                    display: 'block',
+                    marginTop: 32,
+                    display: 'grid',
+                    gridTemplateColumns: 'minmax(0, 1fr)',
+                    gap: 20,
+                    alignItems: 'center',
                   }}
-                />
-                <p className="lead" style={{ margin: 0 }}>
-                  <strong>Travelling as a larger group or family?</strong> For couples and
-                  small groups of up to about 3 people, Adhi&rsquo;s comfortable
-                  air-conditioned car is ideal. For bigger groups and families, his
-                  air-conditioned Toyota van has plenty of room, plus luggage, so everyone
-                  travels together &mdash; indicative van rate from around US$90 per day.
-                  Just tell him your group size and he&rsquo;ll arrange the right vehicle.
-                </p>
-              </div>
+                  className="van-feature"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={vehicleImage}
+                    alt={
+                      tourPackages?.vehicleImageAlt ||
+                      "Inside Adhi's comfortable air-conditioned Toyota van, with cushioned seating and plenty of room for larger groups and families"
+                    }
+                    loading="lazy"
+                    style={{
+                      width: '100%',
+                      borderRadius: 12,
+                      display: 'block',
+                    }}
+                  />
+                  <p className="lead" style={{ margin: 0 }}>
+                    <strong>{vehicleHeading}</strong> {vehicleText}
+                  </p>
+                </div>
+              )}
 
               {/* Internal links to full itinerary pages */}
               <p style={{ textAlign: 'center', marginTop: '2rem' }}>
