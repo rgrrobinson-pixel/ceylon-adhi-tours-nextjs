@@ -82,19 +82,23 @@ export default async function ItinerariesPage() {
                   {imgUrl && (
                     <img
                       src={imgUrl}
-                      alt={it.heroImage?.alt || it.title}
+                      alt={
+                        typeof it.heroImage === 'object' && it.heroImage?.alt
+                          ? it.heroImage.alt
+                          : it.title
+                      }
                       className="card__img"
                       loading="lazy"
                     />
                   )}
                   <div className="card__body">
-                    <p className="eyebrow">{it.durationLabel}</p>
+                    <p className="eyebrow">{it.durationDays} days</p>
                     <h2 className="card__title">
                       <a href={`/itineraries/${it.slug}`}>{it.title}</a>
                     </h2>
                     {it.summary && <p className="card__summary">{it.summary}</p>}
-                    {it.priceFrom && (
-                      <p className="card__price">From {it.priceFrom}</p>
+                    {it.priceNote && (
+                      <p className="card__price">{it.priceNote}</p>
                     )}
                     <div className="card__actions">
                       <a className="btn" href={`/itineraries/${it.slug}`}>

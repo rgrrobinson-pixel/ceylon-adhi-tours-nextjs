@@ -6,11 +6,12 @@
  * once and pass down, keeping each page a single async server component.
  */
 import { LogoMark } from './Logo';
-import type { ImageSource } from '@/lib/types';
+import type { ImageSource, SiteContent } from '@/lib/types';
 import { resolveImageUrl } from '@/lib/resolveImage';
 
 interface SiteChromeProps {
-  businessName: string;
+  content?: SiteContent;
+  businessName?: string;
   areaServed?: string;
   logo?: ImageSource;
   whatsappNumber?: string;
@@ -28,14 +29,20 @@ function whatsappHref(num?: string) {
 }
 
 export function SiteChrome({
+  content,
   businessName,
   areaServed,
   logo,
   whatsappNumber,
   children,
 }: SiteChromeProps) {
-  const logoUrl = logo ? resolveImageUrl(logo, 480) : null;
-  const waHref = whatsappHref(whatsappNumber);
+  const settings = content?.settings;
+  const resolvedBusinessName = businessName || settings?.businessName || 'Ceylon Adhi Tours';
+  const resolvedAreaServed = areaServed ?? settings?.areaServed;
+  const resolvedLogo = logo ?? settings?.logo;
+  const resolvedWhatsappNumber = whatsappNumber ?? settings?.whatsappNumber;
+  const logoUrl = resolvedLogo ? resolveImageUrl(resolvedLogo, 480) : null;
+  const waHref = whatsappHref(resolvedWhatsappNumber);
 
   return (
     <>
@@ -45,15 +52,15 @@ export function SiteChrome({
           <a
             className={`brand${logoUrl ? ' brand--has-logo' : ''}`}
             href="/"
-            aria-label={businessName}
+            aria-label={resolvedBusinessName}
           >
             {logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img className="brand__logo" src={logoUrl} alt={businessName} />
+              <img className="brand__logo" src={logoUrl} alt={resolvedBusinessName} />
             ) : (
               <>
                 <LogoMark />
-                <span>{businessName}</span>
+                <span>{resolvedBusinessName}</span>
               </>
             )}
           </a>
@@ -96,8 +103,8 @@ export function SiteChrome({
       <footer className="site-footer">
         <div className="container site-footer__inner">
           <span>
-            &copy; {new Date().getFullYear()} {businessName}
-            {areaServed ? ` · ${areaServed}` : ''}
+            &copy; {new Date().getFullYear()} {resolvedBusinessName}
+            {resolvedAreaServed ? ` · ${resolvedAreaServed}` : ''}
           </span>
           <nav aria-label="Footer navigation" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
             <a href="/itineraries">Itineraries</a>

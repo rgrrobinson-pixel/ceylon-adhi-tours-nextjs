@@ -59,19 +59,21 @@ export default async function ItineraryPage({ params }: Props) {
     ? resolveImageUrl(itinerary.heroImage, 1400)
     : null;
 
-  const jsonLd = buildItineraryJsonLd({
+  const jsonLd = buildItineraryJsonLd(
     itinerary,
-    pageUrl: `${SITE_URL}/itineraries/${itinerary.slug}`,
-    businessName: settings.businessName,
-  });
+    SITE_URL,
+    `${SITE_URL}/itineraries/${itinerary.slug}`,
+  );
 
   const waHref = settings.whatsappNumber
     ? `https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hi Adhi, I'm interested in the ${itinerary.title} itinerary.`)}`
     : null;
 
-  const emailHref = settings.email
-    ? `mailto:${settings.email}?subject=${encodeURIComponent(`Enquiry: ${itinerary.title}`)}`
+  const emailHref = settings.contactEmail
+    ? `mailto:${settings.contactEmail}?subject=${encodeURIComponent(`Enquiry: ${itinerary.title}`)}`
     : null;
+  const inclusions = itinerary.inclusions || [];
+  const exclusions = itinerary.exclusions || [];
 
   return (
     <SiteChrome content={content}>
@@ -83,7 +85,7 @@ export default async function ItineraryPage({ params }: Props) {
       {/* Hero */}
       <section className="section section--hero" style={heroImgUrl ? { backgroundImage: `url(${heroImgUrl})` } : undefined}>
         <div className="container">
-          <p className="eyebrow">{itinerary.durationLabel}</p>
+          <p className="eyebrow">{itinerary.durationDays} days</p>
           <h1>{itinerary.title}</h1>
           {itinerary.summary && <p className="lead">{itinerary.summary}</p>}
           <div className="hero__actions">
@@ -107,17 +109,15 @@ export default async function ItineraryPage({ params }: Props) {
       </section>
 
       {/* Price + highlights */}
-      {(itinerary.priceFrom || (itinerary.highlights && itinerary.highlights.length > 0)) && (
+      {(itinerary.priceNote || itinerary.bestFor) && (
         <section className="section">
           <div className="container">
-            {itinerary.priceFrom && (
-              <p className="price-callout">From {itinerary.priceFrom} per person</p>
+            {itinerary.priceNote && (
+              <p className="price-callout">{itinerary.priceNote}</p>
             )}
-            {itinerary.highlights && itinerary.highlights.length > 0 && (
+            {itinerary.bestFor && (
               <ul className="highlights-list">
-                {itinerary.highlights.map((h: string, i: number) => (
-                  <li key={i}>{h}</li>
-                ))}
+                <li>{itinerary.bestFor}</li>
               </ul>
             )}
           </div>
@@ -130,10 +130,10 @@ export default async function ItineraryPage({ params }: Props) {
           <div className="container">
             <h2>Day-by-day</h2>
             <ol className="day-list">
-              {itinerary.days.map((day: { title: string; description: string }, i: number) => (
-                <li key={i} className="day-list__item">
-                  <strong>Day {i + 1}: {day.title}</strong>
-                  <p>{day.description}</p>
+              {itinerary.days.map((day) => (
+                <li key={day._key || day.dayNumber} className="day-list__item">
+                  <strong>Day {day.dayNumber}: {day.title}</strong>
+                  <p>{day.body}</p>
                 </li>
               ))}
             </ol>
@@ -142,24 +142,24 @@ export default async function ItineraryPage({ params }: Props) {
       )}
 
       {/* Inclusions / Exclusions */}
-      {(itinerary.inclusions?.length > 0 || itinerary.exclusions?.length > 0) && (
+      {(inclusions.length > 0 || exclusions.length > 0) && (
         <section className="section">
           <div className="container incl-excl">
-            {itinerary.inclusions?.length > 0 && (
+            {inclusions.length > 0 && (
               <div>
                 <h3>Included</h3>
                 <ul>
-                  {itinerary.inclusions.map((item: string, i: number) => (
+                  {inclusions.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
                 </ul>
               </div>
             )}
-            {itinerary.exclusions?.length > 0 && (
+            {exclusions.length > 0 && (
               <div>
                 <h3>Not included</h3>
                 <ul>
-                  {itinerary.exclusions.map((item: string, i: number) => (
+                  {exclusions.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
                 </ul>
