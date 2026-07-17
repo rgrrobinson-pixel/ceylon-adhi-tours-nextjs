@@ -52,6 +52,7 @@ export const structure: StructureResolver = (S) =>
       S.documentTypeListItem('service').title('Services / Tours'),
       S.documentTypeListItem('itinerary').title('Itineraries'),
       S.documentTypeListItem('destination').title('Destinations'),
+      S.documentTypeListItem('landingPage').title('Landing Pages'),
       S.documentTypeListItem('review').title('Reviews'),
       S.documentTypeListItem('faqItem').title('FAQ items'),
     ]);

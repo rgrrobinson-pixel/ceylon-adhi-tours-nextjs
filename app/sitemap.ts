@@ -1,5 +1,9 @@
 import type { MetadataRoute } from 'next';
-import { getAllItinerarySlugs, getAllDestinationSlugs } from '@/lib/getPages';
+import {
+  getAllDestinationSlugs,
+  getAllItinerarySlugs,
+  getAllLandingPageSlugs,
+} from '@/lib/getPages';
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || 'https://www.ceylonadhitours.com';
@@ -12,9 +16,10 @@ const SITE_URL =
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Fetch all slugs in parallel; fall back to empty arrays if Sanity is
   // unavailable so the sitemap still renders with at least the static pages.
-  const [itinerarySlugs, destinationSlugs] = await Promise.all([
+  const [itinerarySlugs, destinationSlugs, landingPageSlugs] = await Promise.all([
     getAllItinerarySlugs().catch(() => [] as string[]),
     getAllDestinationSlugs().catch(() => [] as string[]),
+    getAllLandingPageSlugs().catch(() => [] as string[]),
   ]);
 
   const now = new Date();
@@ -70,5 +75,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })
   );
 
-  return [...staticEntries, ...itineraryEntries, ...destinationEntries];
+  const staticLandingSlugs = new Set([
+    '',
+    'itineraries',
+    'destinations',
+    'family-tours-sri-lanka',
+    'group-tours-sri-lanka',
+    'studio',
+  ]);
+
+  const landingPageEntries: MetadataRoute.Sitemap = landingPageSlugs
+    .filter((slug) => slug && !staticLandingSlugs.has(slug))
+    .map((slug) => ({
+      url: `${SITE_URL}/${slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    }));
+
+  return [
+    ...staticEntries,
+    ...itineraryEntries,
+    ...destinationEntries,
+    ...landingPageEntries,
+  ];
 }

@@ -182,6 +182,38 @@ export interface Destination {
   seoDescription?: string;
 }
 
+// ---- SEO Landing Page ----
+export interface LandingPageSection {
+  _key?: string;
+  eyebrow?: string;
+  heading: string;
+  body?: string;
+  points?: string[];
+}
+
+export interface LandingPageLink {
+  _key?: string;
+  label: string;
+  href: string;
+}
+
+export interface LandingPage {
+  _id: string;
+  title: string;
+  slug: string;
+  category?: string;
+  eyebrow?: string;
+  summary: string;
+  heroImage?: ImageSource;
+  ctaLabel?: string;
+  whatsappMessage?: string;
+  sections?: LandingPageSection[];
+  faqs?: PageFaq[];
+  relatedLinks?: LandingPageLink[];
+  seoTitle?: string;
+  seoDescription?: string;
+}
+
 export interface SiteContent {
   settings: SiteSettings;
   hero: Hero;

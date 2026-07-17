@@ -12,6 +12,7 @@ import { videoSection } from './videoSection';
 import { tourPackagesSection } from './tourPackages';
 import { itinerary } from './itinerary';
 import { destination } from './destination';
+import { landingPage } from './landingPage';
 
 export const schemaTypes: SchemaTypeDefinition[] = [
   siteSettings,
@@ -26,4 +27,5 @@ export const schemaTypes: SchemaTypeDefinition[] = [
   videoSection,
   itinerary,
   destination,
+  landingPage,
 ];

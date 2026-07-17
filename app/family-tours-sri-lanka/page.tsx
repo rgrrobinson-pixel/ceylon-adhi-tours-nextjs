@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { getSiteContent } from '@/lib/getContent';
-import { getAllItineraries } from '@/lib/getPages';
+import { getAllItineraries, getLandingPageBySlug } from '@/lib/getPages';
+import { resolveImageUrl } from '@/lib/resolveImage';
 import { SiteChrome } from '@/components/SiteChrome';
+import { LandingPageView } from '@/components/LandingPageView';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -14,7 +16,32 @@ const PAGE_DESCRIPTION =
   'Travel Sri Lanka as a family with Adhi — a trusted local driver-guide. Safe, relaxed, child-friendly private tours in a comfortable air-conditioned car or Toyota van. Plan your trip on WhatsApp.';
 
 export async function generateMetadata(): Promise<Metadata> {
+  const landingPage = await getLandingPageBySlug(PAGE_PATH.slice(1));
   const { content } = await getSiteContent();
+  if (landingPage) {
+    const title =
+      landingPage.seoTitle ||
+      `${landingPage.title} — ${content.settings.businessName}`;
+    const description = landingPage.seoDescription || landingPage.summary;
+    const ogImage = landingPage.heroImage
+      ? resolveImageUrl(landingPage.heroImage, 1200)
+      : null;
+    return {
+      metadataBase: new URL(SITE_URL),
+      title,
+      description,
+      alternates: { canonical: PAGE_PATH },
+      openGraph: {
+        title,
+        description,
+        url: `${SITE_URL}${PAGE_PATH}`,
+        siteName: content.settings.businessName,
+        images: ogImage
+          ? [{ url: ogImage, width: 1200, alt: landingPage.title }]
+          : undefined,
+      },
+    };
+  }
   return {
     metadataBase: new URL(SITE_URL),
     title: PAGE_TITLE,
@@ -54,10 +81,15 @@ const FAQS = [
 ];
 
 export default async function FamilyToursPage() {
-  const [{ content }, itineraries] = await Promise.all([
+  const [landingPage, { content }, itineraries] = await Promise.all([
+    getLandingPageBySlug(PAGE_PATH.slice(1)),
     getSiteContent(),
     getAllItineraries(),
   ]);
+
+  if (landingPage) {
+    return <LandingPageView landingPage={landingPage} content={content} />;
+  }
 
   const { settings } = content;
 

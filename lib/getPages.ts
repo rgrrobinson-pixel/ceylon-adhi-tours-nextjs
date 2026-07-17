@@ -8,7 +8,7 @@
 import { client } from '@/sanity/lib/client';
 import { groq } from 'next-sanity';
 import { isSanityConfigured, readToken } from '@/sanity/env';
-import type { Itinerary, Destination } from './types';
+import type { Itinerary, Destination, LandingPage } from './types';
 
 const clientOpts = readToken
   ? { token: readToken, perspective: 'published' as const }
@@ -44,6 +44,23 @@ const destinationBySlugQuery = groq`*[_type == "destination" && slug.current == 
 }`;
 
 const allDestinationSlugsQuery = groq`*[_type == "destination"]{ "slug": slug.current }`;
+
+// ---- SEO LANDING PAGE QUERIES ----
+
+const allLandingPagesQuery = groq`*[_type == "landingPage"] | order(title asc) {
+  _id, title, "slug": slug.current, category, summary
+}`;
+
+const landingPageBySlugQuery = groq`*[_type == "landingPage" && slug.current == $slug][0] {
+  _id, title, "slug": slug.current, category, eyebrow, summary, heroImage,
+  ctaLabel, whatsappMessage,
+  sections[]{ _key, eyebrow, heading, body, points },
+  faqs[]{ _key, question, answer },
+  relatedLinks[]{ _key, label, href },
+  seoTitle, seoDescription
+}`;
+
+const allLandingPageSlugsQuery = groq`*[_type == "landingPage"]{ "slug": slug.current }`;
 
 // ---- EXPORTED FETCHERS ----
 
@@ -98,6 +115,34 @@ export async function getAllDestinationSlugs(): Promise<string[]> {
   if (!isSanityConfigured) return [];
   try {
     const results = await client.fetch<{ slug: string }[]>(allDestinationSlugsQuery, {}, clientOpts);
+    return results.map((r) => r.slug).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+export async function getAllLandingPages(): Promise<LandingPage[]> {
+  if (!isSanityConfigured) return [];
+  try {
+    return await client.fetch<LandingPage[]>(allLandingPagesQuery, {}, clientOpts);
+  } catch {
+    return [];
+  }
+}
+
+export async function getLandingPageBySlug(slug: string): Promise<LandingPage | null> {
+  if (!isSanityConfigured) return null;
+  try {
+    return await client.fetch<LandingPage | null>(landingPageBySlugQuery, { slug }, clientOpts);
+  } catch {
+    return null;
+  }
+}
+
+export async function getAllLandingPageSlugs(): Promise<string[]> {
+  if (!isSanityConfigured) return [];
+  try {
+    const results = await client.fetch<{ slug: string }[]>(allLandingPageSlugsQuery, {}, clientOpts);
     return results.map((r) => r.slug).filter(Boolean);
   } catch {
     return [];
